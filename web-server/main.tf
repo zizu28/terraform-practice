@@ -14,7 +14,7 @@ resource "aws_security_group" "simple_instance_sg"{
 }
 
 resource "aws_instance" "simple_instance" {
-  ami = "ami-0360c520857e3138f"
+  ami = var.ami
   instance_type = "t2.micro"
   vpc_security_group_ids = [aws_security_group.simple_instance_sg.id]
   user_data = <<-EOF
@@ -28,27 +28,25 @@ resource "aws_instance" "simple_instance" {
 }
 
 resource "aws_launch_configuration" "asg_launch_config" {
-  image_id = "ami-0360c520857e3138f"
+  image_id = var.ami
   instance_type = "t2.micro"
-  security_groups = [aws_instance.simple_instance_sg.id]
-  user_data = <<-EOF
-  	      #!/bin/bash
-	      echo "Hello, World" > index.html
-	      nohup busybox httpd -f -p ${var.server_port} &
-	      EOF
+  security_groups = [aws_security_group.simple_instance_sg.id]
+  user_data = templatefile("./user-data.sh", {
+    server_port = var.server_port
+  })
   lifecycle {
-    create_before-destroy = true
+    create_before_destroy = true
   }
 }
 
 resource "aws_autoscaling_group" "webserver_asg" {
   launch_configuration = aws_launch_configuration.asg_launch_config.name
-  vpc_zone_identifiers = data.aws_subnets.default_vpc_subnets.ids
+  vpc_zone_identifier = data.aws_subnets.default_vpc_subnets.ids
   target_group_arns = [aws_lb_target_group.asg_lb_target_group.arn]
   health_check_type = "ELB"
 
-  min = 2
-  max = 5
+  min_size = 2
+  max_size = 5
   tag {
     key = "Name"
     value = "Terraform-asg"
@@ -59,7 +57,7 @@ resource "aws_autoscaling_group" "webserver_asg" {
 resource "aws_lb" "webserver_lb" {
   name = "Terraform-lb"
   load_balancer_type = "application"
-  subnets = data.aws_subnets.default_vpc_sebnets.ids
+  subnets = data.aws_subnets.default_vpc_subnets.ids
   security_groups = [aws_security_group.alb_sg.id]
 }
 
@@ -85,7 +83,7 @@ resource "aws_lb_listener_rule" "webserver_lb_listener_rule" {
 
   condition {
     path_pattern {
-      values = [*]
+      values = ["*"]
     }
   }
 
@@ -114,7 +112,7 @@ resource "aws_security_group" "alb_sg" {
 }
 
 resource "aws_lb_target_group" "asg_lb_target_group" {
-  name = "Terraform-webserver-asg-lb-target-group"
+  name = "webserver-asg-lb-target-group"
   port = var.server_port
   protocol = "HTTP"
   vpc_id = data.aws_vpc.default_vpc.id
@@ -136,7 +134,7 @@ data "aws_vpc" "default_vpc" {
 
 data "aws_subnets" "default_vpc_subnets" {
   filter {
-    name = "vpc_id"
+    name = "vpc-id"
     values = [data.aws_vpc.default_vpc.id]  
   }
 }

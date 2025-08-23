@@ -6,8 +6,8 @@ provider "aws" {
 resource "aws_security_group" "simple_instance_sg"{
   name = "simple-instance-security-group"
   ingress {
-    from_port = 8080
-    to_port = 8080
+    from_port = var.server_port
+    to_port = var.server_port
     protocol = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
@@ -20,7 +20,7 @@ resource "aws_instance" "simple_instance" {
   user_data = <<-EOF
               #!/bin/bash
 	      echo "Hello, World" > index.html
-              nohup busybox httpd -f -p 8080 &
+              nohup busybox httpd -f -p ${var.server_port} &
               EOF
   tags = {
     Name = "Terraform-provisioned-instance"

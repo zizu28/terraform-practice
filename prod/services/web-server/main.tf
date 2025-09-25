@@ -12,6 +12,7 @@ module "webserver_cluster" {
   ami = "ami-0360c520857e3138f"
   min_size = 2
   max_size = 2
+  enable_autoscaling = true
   db_remote_state_bucket = "zizu-terraform-up-and-running"
   db_remote_state_key = "stage/data-stores/mysql/terraform.tfstate"
 }

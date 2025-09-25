@@ -6,6 +6,13 @@ variable "server_port" {
 variable "ami" {
   description = "The EC2 AMI to provision"
   type = string
+  default = "ami-0360c520857e3138f"
+}
+
+variable "server_text" {
+  description = "The text the web server should return."
+  type = string
+  default = "Hello World"
 }
 
 variable "cluster_name" {
@@ -36,4 +43,15 @@ variable "min_size" {
 variable "max_size" {
   description = "Maximum number of EC2 instances to run in the ASG"
   type = number
+}
+
+variable "custom_tags" {
+  description = "Custom tags to set on the instances in ASG"
+  type = map(string)
+  default = {}
+}
+
+variable "enable_autoscaling" {
+  description = "If set to true, enable autoscaling."
+  type = bool
 }
